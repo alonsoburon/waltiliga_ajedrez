@@ -1,8 +1,12 @@
+<!-- src/routes/+layout.svelte -->
 <script lang="ts">
 	import '../app.postcss';
-	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
+	import { AppShell, AppBar, initializeStores } from '@skeletonlabs/skeleton';
 	import { page } from '$app/stores';
 	import { LightSwitch } from '@skeletonlabs/skeleton';
+
+	// Initialize Skeleton stores
+	initializeStores();
 </script>
 
 <AppShell>

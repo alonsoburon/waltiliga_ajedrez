@@ -1,32 +1,33 @@
-// src/routes/games/+page.server.ts
+// routes/games/+page.server.ts
 import { db } from '$lib/server/db';
+import { games, players, seasons } from '$lib/server/db/schema';
+import { desc, eq } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
-import { eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async () => {
-	const games = await db.query.games.findMany({
+	const allGames = await db.query.games.findMany({
 		with: {
 			whitePlayer: true,
 			blackPlayer: true,
-			creator: true,
 			season: true
 		},
-		orderBy: (games, { desc }) => [desc(games.playedAt)] // Mantener orden descendente
+		orderBy: [desc(games.playedAt)]
 	});
 
-	const players = await db.query.players.findMany({
-		where: (players, { eq }) => eq(players.active, true)
+	const allPlayers = await db.query.players.findMany({
+		with: {
+			division: true
+		}
 	});
 
-	const seasons = await db.query.seasons.findMany({
-		orderBy: (seasons, { desc }) => [desc(seasons.startDate)]
+	const currentSeason = await db.query.seasons.findFirst({
+		where: eq(seasons.active, true)
 	});
 
 	return {
-		games,
-		players,
-		seasons,
-		currentSeason: seasons.find((s) => s.active)
+		games: allGames,
+		players: allPlayers,
+		currentSeason
 	};
 };
 

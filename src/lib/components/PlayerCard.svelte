@@ -1,11 +1,24 @@
+<!-- lib/components/PlayerCard.svelte -->
 <script lang="ts">
-	import type { Player } from '$lib/types';
 	import { calculateHistoricalElo } from '$lib/elo';
+	import type { Player, Game } from '$lib/types';
 
 	export let player: Player;
-	export let games: any[]; // Necesitamos recibir los juegos
+	export let games: Game[];
 
-	$: currentElo = calculateHistoricalElo(games, player.id, Infinity);
+	$: currentElo = calculateHistoricalElo(
+		games,
+		games.map((g) => g.whitePlayer || g.blackPlayer),
+		player.id
+	);
+	$: playerGames = games.filter((game) => game.whiteId === player.id || game.blackId === player.id);
+	$: wins = playerGames.filter(
+		(game) =>
+			(game.whiteId === player.id && game.result === 1) ||
+			(game.blackId === player.id && game.result === -1)
+	).length;
+	$: draws = playerGames.filter((game) => game.result === 0).length;
+	$: losses = playerGames.length - wins - draws;
 </script>
 
 <div class="card variant-filled-surface">
@@ -31,10 +44,20 @@
 			<span class="font-bold">{currentElo}</span>
 		</div>
 		<div class="flex justify-between">
-			<span>Estado</span>
-			<span class={player.active ? 'text-success-500' : 'text-error-500'}>
-				{player.active ? 'Activo' : 'Inactivo'}
+			<span>Δ ELO</span>
+			<span
+				class={currentElo > player.startingElo
+					? 'text-success-500'
+					: currentElo < player.startingElo
+						? 'text-error-500'
+						: ''}
+			>
+				{currentElo - player.startingElo}
 			</span>
+		</div>
+		<div class="flex justify-between">
+			<span>Record</span>
+			<span>{wins}V - {draws}E - {losses}D</span>
 		</div>
 	</section>
 

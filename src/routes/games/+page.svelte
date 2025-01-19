@@ -6,10 +6,9 @@
 	export let data: PageData;
 	let showNewGameForm = false;
 
-	// Los juegos ya vienen ordenados por fecha descendente desde el servidor
 	$: gamesWithElo = data.games.map((game) => {
-		const whiteElo = calculateHistoricalElo(data.games, game.whiteId, game.id);
-		const blackElo = calculateHistoricalElo(data.games, game.blackId, game.id);
+		const whiteElo = calculateHistoricalElo(data.games, data.players, game.whiteId, game.id);
+		const blackElo = calculateHistoricalElo(data.games, data.players, game.blackId, game.id);
 		const eloChange = calculateEloChange(whiteElo, blackElo, game.result);
 
 		return {
