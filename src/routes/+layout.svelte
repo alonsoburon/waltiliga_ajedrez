@@ -1,6 +1,34 @@
 <script lang="ts">
-	import '../app.css';
-	let { children } = $props();
+	import '../app.postcss';
+	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
+	import { page } from '$app/stores';
+	import { LightSwitch } from '@skeletonlabs/skeleton';
 </script>
 
-{@render children()}
+<AppShell>
+	<svelte:fragment slot="header">
+		{#if $page.data.user}
+			<AppBar>
+				<svelte:fragment slot="lead">
+					<strong class="text-xl font-serif">Waltiliga</strong>
+				</svelte:fragment>
+				<svelte:fragment slot="trail">
+					<a href="/games" class="btn btn-sm variant-ghost-surface">Partidas</a>
+					<a href="/rankings" class="btn btn-sm variant-ghost-surface">Rankings</a>
+					<a href="/calendar" class="btn btn-sm variant-ghost-surface">Calendario</a>
+					{#if $page.data.user.isAdmin}
+						<a href="/admin" class="btn btn-sm variant-ghost-surface">Admin</a>
+					{/if}
+					<LightSwitch />
+					<form action="/auth/logout" method="POST">
+						<button type="submit" class="btn btn-sm variant-ghost-surface">Logout</button>
+					</form>
+				</svelte:fragment>
+			</AppBar>
+		{/if}
+	</svelte:fragment>
+
+	<main class="container mx-auto p-4">
+		<slot />
+	</main>
+</AppShell>
