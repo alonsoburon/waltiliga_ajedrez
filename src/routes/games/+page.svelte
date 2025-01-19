@@ -142,7 +142,7 @@
 	</div>
 
 	<NewGameModal
-		{show}={showNewGameForm}
+		show={showNewGameForm}
 		onClose={() => (showNewGameForm = false)}
 		players={data.players}
 		currentSeason={data.currentSeason}
@@ -150,7 +150,7 @@
 	/>
 </div>
 
-<style>
+<style lang="postcss">
 	th {
 		@apply text-sm opacity-75 p-3;
 	}
@@ -170,7 +170,7 @@
 
 	.result-container {
 		position: relative;
-		width: 90px; /* Un poco más de ancho para más espacio */
+		width: 90px;
 		height: 24px;
 		display: inline-block;
 	}
@@ -183,12 +183,12 @@
 
 	.left-pawn {
 		position: absolute;
-		left: -5px; /* Más hacia la izquierda */
+		left: -5px;
 	}
 
 	.right-pawn {
 		position: absolute;
-		right: -5px; /* Más hacia la derecha */
+		right: -5px;
 	}
 
 	.pawn-white {
