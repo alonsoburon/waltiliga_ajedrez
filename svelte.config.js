@@ -8,7 +8,7 @@ const config = {
 
 	kit: {
 		adapter: adapter({
-			runtime: 'nodejs18.x',
+			runtime: 'nodejs20.x', // Actualizado a Node.js 20
 			functionBoundary: false
 		})
 	}
