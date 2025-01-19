@@ -2,7 +2,8 @@
 import { db } from '$lib/server/db';
 import { games, players, seasons } from '$lib/server/db/schema';
 import { desc, eq } from 'drizzle-orm';
-import type { PageServerLoad } from './$types';
+import { fail } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async () => {
 	const allGames = await db.query.games.findMany({
@@ -30,11 +31,6 @@ export const load: PageServerLoad = async () => {
 		currentSeason
 	};
 };
-
-// Opcional: Si quieres manejar la creación de partidas en el servidor
-import { fail } from '@sveltejs/kit';
-import { games } from '$lib/server/db/schema';
-import type { Actions } from './$types';
 
 export const actions: Actions = {
 	default: async ({ request }) => {

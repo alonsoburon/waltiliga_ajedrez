@@ -4,6 +4,7 @@
 	import { AppShell, AppBar, initializeStores } from '@skeletonlabs/skeleton';
 	import { page } from '$app/stores';
 	import { LightSwitch } from '@skeletonlabs/skeleton';
+	import { enhance } from '$app/forms';
 
 	// Initialize Skeleton stores
 	initializeStores();
@@ -25,8 +26,19 @@
 						<a href="/admin" class="btn btn-sm variant-ghost-surface">Admin</a>
 					{/if}
 					<LightSwitch />
-					<form action="/auth/logout" method="POST">
-						<button type="submit" class="btn btn-sm variant-ghost-surface">Logout</button>
+					<form
+						action="/auth/logout"
+						method="POST"
+						use:enhance={() => {
+							return async ({ result }) => {
+								if (result.type === 'redirect') {
+									window.location.href = result.location;
+								}
+							};
+						}}
+						class="inline-block"
+					>
+						<button type="submit" class="btn btn-sm variant-ghost-surface"> Logout </button>
 					</form>
 				</svelte:fragment>
 			</AppBar>

@@ -17,7 +17,7 @@
 </script>
 
 {#if show}
-	<div class="modal-backdrop" />
+	<div class="modal-backdrop"></div>
 	<div class="modal" role="dialog">
 		<div class="modal-content card p-6 w-modal shadow-xl">
 			<header class="flex justify-between items-center mb-6">

@@ -1,35 +1,22 @@
-import { db } from '.';
-import { divisions, seasons } from './schema';
+// src/lib/server/db/index.ts
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import { DATABASE_URL } from '$env/static/private';
+import * as schema from './schema'; // Añadir esta línea
 
-async function seed() {
-	try {
-		// 1. Crear divisiones
-		console.log('Creando divisiones...');
-		const [gold, silver, bronze] = await db
-			.insert(divisions)
-			.values([
-				{ name: 'Gold', rank: 1 },
-				{ name: 'Silver', rank: 2 },
-				{ name: 'Bronze', rank: 3 }
-			])
-			.returning();
+const connectionString = DATABASE_URL;
 
-		// 2. Crear temporada inicial
-		console.log('Creando temporada inicial...');
-		await db.insert(seasons).values({
-			name: 'Temporada 1 2024',
-			description: 'Primera temporada de la Waltiliga',
-			startDate: '2024-01-01', // Como string en formato ISO
-			endDate: '2024-06-30', // Como string en formato ISO
-			active: true,
-			divisionId: gold.id,
-			prizeUrl: null
-		});
+// Codificar los caracteres especiales en la URL
+const encodedConnectionString = connectionString.replace(
+	/:([^/@]+)@/,
+	(match, p1) => `:${encodeURIComponent(p1)}@`
+);
 
-		console.log('Seed completado exitosamente');
-	} catch (error) {
-		console.error('Error en seed:', error);
-	}
-}
+const queryConfig = {
+	prepare: false,
+	ssl: process.env.NODE_ENV === 'production' ? 'require' : false
+};
 
-seed();
+const client = postgres(encodedConnectionString, queryConfig);
+
+export const db = drizzle(client, { schema }); // Añadir schema aquí

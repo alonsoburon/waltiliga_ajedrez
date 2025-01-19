@@ -10,7 +10,16 @@
 	<div class="card p-8 w-full max-w-md">
 		<h1 class="text-2xl font-bold mb-6 text-center">Login</h1>
 
-		<form method="POST" use:enhance class="space-y-4">
+		<form
+			method="POST"
+			use:enhance={() => {
+				return async ({ result }) => {
+					if (result.type === 'redirect') {
+						window.location.href = result.location;
+					}
+				};
+			}}
+		>
 			{#if form?.message}
 				<div class="alert variant-filled-error">
 					{form.message}
