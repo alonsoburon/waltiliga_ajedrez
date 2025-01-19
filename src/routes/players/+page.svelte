@@ -1,42 +1,30 @@
-<!-- src/routes/players/+page.svelte -->
 <script lang="ts">
 	import type { PageData } from './$types';
+	import PlayerCard from '$lib/components/PlayerCard.svelte';
 
 	export let data: PageData;
+	let filterDivision = 'all';
 
-	function calculateStats(player: any) {
-		const totalGames = player.gamesAsWhite.length + player.gamesAsBlack.length;
-		const wins =
-			player.gamesAsWhite.filter((g) => g.result === 1).length +
-			player.gamesAsBlack.filter((g) => g.result === -1).length;
-		const draws =
-			player.gamesAsWhite.filter((g) => g.result === 0).length +
-			player.gamesAsBlack.filter((g) => g.result === 0).length;
-		const losses = totalGames - wins - draws;
-
-		return { games: totalGames, wins, draws, losses };
-	}
+	$: filteredPlayers =
+		filterDivision === 'all'
+			? data.players
+			: data.players.filter((p) => p.divisionId === parseInt(filterDivision));
 </script>
 
-<div class="container mx-auto p-4">
-	<div class="flex justify-between items-center mb-6">
-		<h1 class="text-2xl font-bold">Jugadores</h1>
+<div class="container h-full mx-auto flex flex-col gap-8 p-4">
+	<div class="flex justify-between items-center">
+		<h2 class="h2 font-serif">Jugadores</h2>
+		<select bind:value={filterDivision} class="select">
+			<option value="all">Todas las divisiones</option>
+			{#each data.divisions as division}
+				<option value={division.id}>{division.name}</option>
+			{/each}
+		</select>
 	</div>
 
-	<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-		{#each data.players as player}
-			{@const stats = calculateStats(player)}
-			<div class="card p-4">
-				<h3 class="text-xl font-bold">{player.name}</h3>
-				<div class="mt-2">
-					<p>División: {player.division?.name || 'Sin división'}</p>
-					<p>ELO inicial: {player.startingElo}</p>
-					<div class="mt-2">
-						<p>Partidas: {stats.games}</p>
-						<p>V/E/D: {stats.wins}/{stats.draws}/{stats.losses}</p>
-					</div>
-				</div>
-			</div>
+	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+		{#each filteredPlayers as player}
+			<PlayerCard {player} games={data.games} />
 		{/each}
 	</div>
 </div>

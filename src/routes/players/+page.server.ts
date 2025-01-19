@@ -1,30 +1,21 @@
-// src/routes/players/+page.server.ts
+// routes/players/+page.server.ts
 import { db } from '$lib/server/db';
+import { players, divisions, games } from '$lib/server/db/schema';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const players = await db.query.players.findMany({
+	const allPlayers = await db.query.players.findMany({
 		with: {
-			division: true,
-			gamesAsWhite: {
-				columns: {
-					result: true
-				},
-				relationName: 'playerWhiteGames'
-			},
-			gamesAsBlack: {
-				columns: {
-					result: true
-				},
-				relationName: 'playerBlackGames'
-			}
+			division: true
 		}
 	});
 
-	const divisions = await db.query.divisions.findMany();
+	const allGames = await db.query.games.findMany();
+	const allDivisions = await db.query.divisions.findMany();
 
 	return {
-		players,
-		divisions
+		players: allPlayers,
+		games: allGames,
+		divisions: allDivisions
 	};
 };

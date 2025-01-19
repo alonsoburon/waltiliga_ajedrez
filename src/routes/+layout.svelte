@@ -14,6 +14,7 @@
 				</svelte:fragment>
 				<svelte:fragment slot="trail">
 					<a href="/games" class="btn btn-sm variant-ghost-surface">Partidas</a>
+					<a href="/players" class="btn btn-sm variant-ghost-surface">Jugadores</a>
 					<a href="/rankings" class="btn btn-sm variant-ghost-surface">Rankings</a>
 					<a href="/calendar" class="btn btn-sm variant-ghost-surface">Calendario</a>
 					{#if $page.data.user.isAdmin}

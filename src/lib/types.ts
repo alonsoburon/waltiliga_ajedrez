@@ -4,6 +4,7 @@ export interface Player {
 	startingElo: number;
 	active: boolean;
 	divisionId: number;
+	division: Division;
 }
 
 export interface Season {
@@ -32,4 +33,10 @@ export interface Game {
 	whitePlayer: Player;
 	blackPlayer: Player;
 	season: Season;
+}
+
+export interface Division {
+	id: number;
+	name: string;
+	rank: number;
 }
