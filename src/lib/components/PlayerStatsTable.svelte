@@ -48,79 +48,123 @@
 	<div class="table-container">
 		<table class="table">
 			<thead>
-				<tr>
-					<th>Pos</th>
-					<th>Jugador</th>
-					<th class="text-right">ELO</th>
+				<tr class="border-b-2 border-surface-500/30">
+					<th class="text-center py-3 font-semibold text-surface-300">Pos</th>
+					<th class="text-left py-3 font-semibold text-surface-300">Jugador</th>
+					<th class="text-center py-3 font-semibold text-surface-300">ELO</th>
 					{#if showEloChange}
-						<th class="text-right" title="Cambio de ELO">Δ</th>
+						<th class="text-center py-3 font-semibold text-surface-300" title="Cambio de ELO">Δ</th>
 					{/if}
-					<th class="text-center" title="Partidas jugadas">PJ</th>
-					<th class="text-center" title="Victorias/Empates/Derrotas">V/E/D</th>
-					<th class="text-center" title="Victorias con blancas/negras">⚪/⚫</th>
-					<th class="text-center" title="Racha actual">Racha</th>
-					<th class="text-center" title="Últimas 5 partidas">Forma</th>
+					<th class="text-center py-3 font-semibold text-surface-300" title="Partidas jugadas"
+						>PJ</th
+					>
+					<th
+						class="text-center py-3 font-semibold text-surface-300"
+						title="Victorias/Empates/Derrotas"
+					>
+						<div class="flex items-center justify-center gap-1">
+							<span>V</span>
+							<span class="text-surface-400">/</span>
+							<span>E</span>
+							<span class="text-surface-400">/</span>
+							<span>D</span>
+						</div>
+					</th>
+					<th
+						class="text-center py-3 font-semibold text-surface-300"
+						title="Victorias con blancas/negras"
+					>
+						<div class="flex items-center justify-center gap-1">
+							<span>⚪</span>
+							<span class="text-surface-400">/</span>
+							<span>⚫</span>
+						</div>
+					</th>
+					<th class="text-center py-3 font-semibold text-surface-300" title="Racha actual">Racha</th
+					>
+					<th class="text-center py-3 font-semibold text-surface-300" title="Últimas 5 partidas"
+						>Forma</th
+					>
 					{#if showPerformance}
-						<th class="text-right" title="Performance Rating">Perf</th>
+						<th class="text-center py-3 font-semibold text-surface-300" title="Performance Rating"
+							>Perf</th
+						>
 					{/if}
-					<th class="text-right" title="Porcentaje de victorias">%</th>
+					<th
+						class="text-center py-3 font-semibold text-surface-300"
+						title="Porcentaje de victorias">%</th
+					>
 				</tr>
 			</thead>
 			<tbody>
 				{#each players as player, i}
-					<tr class="hover:bg-surface-600">
-						<td>{i + 1}</td>
-						<td>
-							<a href="/players/{player.id}" class="hover:underline flex items-center gap-2">
-								<span>{player.name}</span>
+					<tr class="hover:bg-surface-600/20 border-b border-surface-500/20">
+						<td class="text-center py-3">{i + 1}</td>
+						<td class="py-3">
+							<a
+								href="/players/{player.id}"
+								class="hover:underline flex items-center gap-2 text-primary-500"
+							>
+								<span class="font-medium">{player.name}</span>
 								{#if !player.active}
-									<span class="badge variant-soft-error">Inactivo</span>
+									<span class="badge variant-filled-error text-xs">Inactivo</span>
 								{/if}
 							</a>
 						</td>
-						<td class="text-right font-bold">{Math.round(player.currentElo)}</td>
+						<td class="text-left font-bold py-3">
+							{Math.round(player.currentElo)}
+						</td>
 						{#if showEloChange}
-							<td class="text-right {getEloChangeClass(player.eloChange)}">
+							<td class="text-left py-3 {getEloChangeClass(player.eloChange)}">
 								{formatWithSign(Math.round(player.eloChange))}
 							</td>
 						{/if}
-						<td class="text-center">{player.gamesPlayed}</td>
-						<td class="text-center">
-							<span class="text-green-400">{player.wins}</span>
-							/<span class="text-surface-300">{player.draws}</span>
-							/<span class="text-red-400">{player.losses}</span>
+						<td class="text-left py-3 tabular-nums">
+							{player.gamesPlayed}
 						</td>
-						<td class="text-center">
-							<span title="Victorias con blancas">{player.winsAsWhite}</span>
-							/<span title="Victorias con negras">{player.winsAsBlack}</span>
+						<td class="text-center py-3 tabular-nums">
+							<div class="flex items-center justify-center gap-1">
+								<span class="text-success-400">{player.wins}</span>
+								<span class="text-surface-400">/</span>
+								<span class="text-surface-400">{player.draws}</span>
+								<span class="text-surface-400">/</span>
+								<span class="text-error-400">{player.losses}</span>
+							</div>
 						</td>
-						<td class="text-center">
+						<td class="text-center py-3 tabular-nums">
+							<div class="flex items-center justify-center gap-1">
+								<span title="Victorias con blancas">{player.winsAsWhite}</span>
+								<span class="text-surface-400">/</span>
+								<span title="Victorias con negras">{player.winsAsBlack}</span>
+							</div>
+						</td>
+						<td class="text-center py-3">
 							{#if player.winStreak > 0}
-								<span class="badge variant-filled-success">
+								<span class="badge bg-success-900 text-success-100 px-2 py-1 font-bold">
 									{player.winStreak}
-									{getStreakEmoji(player.winStreak)}
+									<span class="ml-1">{getStreakEmoji(player.winStreak)}</span>
 								</span>
 							{/if}
 						</td>
-						<td class="text-center">
-							<div class="flex gap-1 justify-center items-center font-bold text-lg">
+						<td class="text-center py-3">
+							<div class="flex gap-1.5 justify-left items-center">
 								{#each player.lastGames as result}
-									<span class={getResultClass(result)}>
+									<span class={getResultClass(result)} style="line-height: 0;">
 										{getResultDot(result)}
 									</span>
 								{/each}
 							</div>
 						</td>
 						{#if showPerformance}
-							<td class="text-right">
+							<td class="text-left py-3 tabular-nums">
 								{#if player.performance > 0}
 									{Math.round(player.performance)}
 								{:else}
-									<span class="opacity-50">-</span>
+									<span class="text-surface-400">-</span>
 								{/if}
 							</td>
 						{/if}
-						<td class="text-right font-bold">
+						<td class="text-left font-bold py-3 tabular-nums">
 							{player.winRate}%
 						</td>
 					</tr>
