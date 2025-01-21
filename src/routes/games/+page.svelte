@@ -1,34 +1,16 @@
 <script lang="ts">
-	import { calculateEloChange, calculateHistoricalElo } from '$lib/elo';
-	import NewGameModal from '$lib/components/NewGameModal.svelte';
 	import type { PageData } from './$types';
+	import NewGameModal from '$lib/components/NewGameModal.svelte';
+	import { gamesStore } from '$lib/stores/games';
+	import { fade } from 'svelte/transition';
 
 	export let data: PageData;
-	let showNewGameForm = false;
+	let dialogElement: HTMLDialogElement;
 
-	$: gamesWithElo = data.games.map((game) => {
-		const whiteElo = calculateHistoricalElo(data.games, data.players, game.whiteId, game.id);
-		const blackElo = calculateHistoricalElo(data.games, data.players, game.blackId, game.id);
-		const eloChange = calculateEloChange(whiteElo, blackElo, game.result);
+	$: gamesStore.setData(data.games, data.players);
 
-		return {
-			...game,
-			whiteElo,
-			blackElo,
-			eloChange
-		};
-	});
-
-	function formatDate(date: string) {
-		return new Date(date)
-			.toLocaleString('es-CL', {
-				day: 'numeric',
-				month: 'numeric',
-				hour: '2-digit',
-				minute: '2-digit'
-			})
-			.replace(',', '');
-	}
+	const openModal = () => dialogElement?.showModal();
+	const closeModal = () => dialogElement?.close();
 </script>
 
 <div class="container mx-auto p-4">
@@ -37,7 +19,7 @@
 			<span class="material-symbols-outlined">chess</span>
 			Historial de Partidas
 		</h1>
-		<button class="btn variant-filled" on:click={() => (showNewGameForm = true)}>
+		<button class="btn variant-filled" on:click={openModal}>
 			<span class="material-symbols-outlined">add_circle</span>
 			Nueva Partida
 		</button>
@@ -48,117 +30,84 @@
 			<thead class="bg-surface-600">
 				<tr>
 					<th class="w-48">
-						<!-- Columna jugador -->
 						<div class="flex items-center gap-2">
 							<span class="material-symbols-outlined pawn-white">chess_pawn</span>
 							<span>Blancas</span>
 						</div>
 					</th>
-					<th class="w-32 text-center">
-						<!-- Columna ELO -->
-						<div class="flex items-center justify-center gap-2">
-							<span class="material-symbols-outlined" style="color: gold">star</span>
-							<span>ELO</span>
-						</div>
-					</th>
-					<th class="w-28 text-center">
-						<!-- Columna resultado -->
-						<div class="flex justify-center">Resultado</div>
-					</th>
-					<th class="w-32 text-center">
-						<!-- Columna ELO -->
-						<div class="flex items-center justify-center gap-2">
-							<span class="material-symbols-outlined" style="color: gold">star</span>
-							<span>ELO</span>
-						</div>
-					</th>
 					<th class="w-48">
-						<!-- Columna jugador -->
 						<div class="flex items-center gap-2">
 							<span class="material-symbols-outlined pawn-black">chess_pawn</span>
 							<span>Negras</span>
 						</div>
 					</th>
-					<th class="w-28 text-center">
-						<!-- Columna fecha -->
-						<div class="flex items-center justify-center">
-							<span class="material-symbols-outlined">calendar_month</span>
+					<th class="w-32 text-center">
+						<div class="flex items-center justify-center gap-2">
+							<span class="material-symbols-outlined" style="color: gold">star</span>
+							<span>Resultado</span>
 						</div>
 					</th>
-					<th class="w-20 text-center">
-						<!-- Columna Lettuce -->
-						<div class="flex justify-center">Factor Lechuga</div>
-					</th>
+					<th class="w-32 text-center">Fecha</th>
+					<th class="w-32 text-center">Temporada</th>
 				</tr>
 			</thead>
 			<tbody>
-				{#each gamesWithElo as game}
-					<tr>
-						<td>{game.whitePlayer.name}</td>
-						<td class="text-center">
-							{game.whiteElo}
-							<span class={game.result === 1 ? 'text-success-500' : 'text-error-500'}>
-								{game.result === 1 ? '+' : '-'}{Math.abs(game.eloChange)}
-							</span>
-						</td>
-						<td class="text-center">
-							{#if game.result === 1}
-								<!-- White wins -->
-								<div class="result-container">
-									<span class="material-symbols-outlined pawn-white left-pawn"> chess_pawn </span>
-									<span class="material-symbols-outlined crown" style="color: gold"> crown </span>
-								</div>
-							{:else if game.result === -1}
-								<!-- Black wins -->
-								<div class="result-container">
-									<span class="material-symbols-outlined pawn-black right-pawn"> chess_pawn </span>
-									<span class="material-symbols-outlined crown" style="color: gold"> crown </span>
-								</div>
-							{:else}
-								<!-- Draw -->
-								<span class="material-symbols-outlined" style="color: var(--color-surface-500)">
-									balance
+				{#each $gamesStore as game (game.id)}
+					<tr
+						in:fade={{ duration: 300 }}
+						out:fade={{ duration: 200 }}
+						class="transition-all hover:bg-surface-600/20"
+					>
+						<td>
+							<div class="flex items-center gap-2">
+								<span class="font-bold">{game.whitePlayer.name}</span>
+								<span class={gamesStore.getEloChange(game, true).className}>
+									({gamesStore.getEloChange(game, true).text})
 								</span>
-							{/if}
+							</div>
+						</td>
+						<td>
+							<div class="flex items-center gap-2">
+								<span class="font-bold">{game.blackPlayer.name}</span>
+								<span class={gamesStore.getEloChange(game, false).className}>
+									({gamesStore.getEloChange(game, false).text})
+								</span>
+							</div>
 						</td>
 						<td class="text-center">
-							{game.blackElo}
-							<span class={game.result === -1 ? 'text-success-500' : 'text-error-500'}>
-								{game.result === -1 ? '+' : '-'}{Math.abs(game.eloChange)}
+							<span class="badge {gamesStore.getResultClass(gamesStore.getGameResult(game))}">
+								{gamesStore.getGameResult(game)}
 							</span>
 						</td>
-						<td>{game.blackPlayer.name}</td>
-						<td class="text-center">{formatDate(game.playedAt)}</td>
 						<td class="text-center">
-							{#if game.cond1}
-								<span>🥬</span>
-							{/if}
+							{new Date(game.playedAt).toLocaleDateString()}
+						</td>
+						<td class="text-center">
+							{game.season.name}
 						</td>
 					</tr>
 				{/each}
 			</tbody>
 		</table>
 	</div>
-
-	<NewGameModal
-		show={showNewGameForm}
-		onClose={() => (showNewGameForm = false)}
-		players={data.players}
-		currentSeason={data.currentSeason}
-		games={data.games}
-	/>
 </div>
+
+<NewGameModal
+	bind:dialogElement
+	players={data.players}
+	currentSeason={data.currentSeason}
+	onClose={closeModal}
+/>
 
 <style lang="postcss">
 	th {
 		@apply text-sm opacity-75 p-3;
 	}
+
 	td {
 		@apply p-3;
 	}
-	tr:hover {
-		@apply bg-surface-600/20;
-	}
+
 	.material-symbols-outlined {
 		font-variation-settings:
 			'FILL' 1,
@@ -167,40 +116,35 @@
 			'opsz' 24;
 	}
 
-	.result-container {
-		position: relative;
-		width: 90px;
-		height: 24px;
-		display: inline-block;
-	}
-
-	.crown {
-		position: absolute;
-		left: 50%;
-		transform: translateX(-50%);
-	}
-
-	.left-pawn {
-		position: absolute;
-		left: -5px;
-	}
-
-	.right-pawn {
-		position: absolute;
-		right: -5px;
-	}
-
 	.pawn-white {
-		background-color: white;
-		color: black;
-		border-radius: 50%;
-		padding: 2px;
+		@apply bg-white text-black rounded-full p-0.5;
 	}
 
 	.pawn-black {
-		background-color: black;
-		color: white;
-		border-radius: 50%;
-		padding: 2px;
+		@apply bg-black text-white rounded-full p-0.5;
+	}
+
+	.badge {
+		@apply px-2 py-1 rounded;
+	}
+
+	.badge-white {
+		@apply bg-white text-black border border-black;
+	}
+
+	.badge-black {
+		@apply bg-black text-white;
+	}
+
+	.badge-draw {
+		@apply bg-[#ffd700] text-black;
+	}
+
+	:global(.text-success-500) {
+		@apply text-green-500;
+	}
+
+	:global(.text-error-500) {
+		@apply text-red-500;
 	}
 </style>

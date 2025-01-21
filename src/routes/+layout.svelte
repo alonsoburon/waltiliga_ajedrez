@@ -1,14 +1,47 @@
 <!-- src/routes/+layout.svelte -->
 <script lang="ts">
 	import '../app.postcss';
-	import { AppShell, AppBar, initializeStores } from '@skeletonlabs/skeleton';
+	import { AppShell, AppBar, initializeStores, Toast } from '@skeletonlabs/skeleton';
 	import { page } from '$app/stores';
 	import { LightSwitch } from '@skeletonlabs/skeleton';
 	import { enhance } from '$app/forms';
+	import {
+		Chart,
+		CategoryScale,
+		LinearScale,
+		PointElement,
+		LineElement,
+		Title,
+		Tooltip,
+		Legend,
+		Filler,
+		LineController // Añadido este
+	} from 'chart.js';
 
 	// Initialize Skeleton stores
 	initializeStores();
+
+	// Registrar los componentes de Chart.js
+	Chart.register(
+		CategoryScale,
+		LinearScale,
+		PointElement,
+		LineElement,
+		Title,
+		Tooltip,
+		Legend,
+		Filler,
+		LineController // Añadido este
+	);
+
+	// Configuración global de Chart.js
+	Chart.defaults.color = '#fff';
+	Chart.defaults.font.family = 'system-ui, sans-serif';
+	Chart.defaults.responsive = true;
+	Chart.defaults.maintainAspectRatio = false;
 </script>
+
+<Toast position="tr" />
 
 <AppShell>
 	<svelte:fragment slot="header">
@@ -22,6 +55,7 @@
 					<a href="/players" class="btn btn-sm variant-ghost-surface">Jugadores</a>
 					<a href="/rankings" class="btn btn-sm variant-ghost-surface">Rankings</a>
 					<a href="/calendar" class="btn btn-sm variant-ghost-surface">Calendario</a>
+
 					{#if $page.data.user.isAdmin}
 						<a href="/admin" class="btn btn-sm variant-ghost-surface">Admin</a>
 					{/if}

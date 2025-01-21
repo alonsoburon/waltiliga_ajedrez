@@ -1,36 +1,43 @@
 // routes/rankings/+page.server.ts
 import { db } from '$lib/server/db';
-import { players, divisions, games } from '$lib/server/db/schema';
+import { players, divisions, games, seasons } from '$lib/server/db/schema';
 import type { PageServerLoad } from './$types';
-import { desc, eq } from 'drizzle-orm';
+import { desc } from 'drizzle-orm';
 
 export const load: PageServerLoad = async () => {
-	// Obtener todas las divisiones
-	const allDivisions = await db.query.divisions.findMany({
-		orderBy: [desc(divisions.rank)]
-	});
+	const [allDivisions, allPlayers, allGames, allSeasons] = await Promise.all([
+		// Obtener todas las divisiones
+		db.query.divisions.findMany({
+			orderBy: [desc(divisions.rank)]
+		}),
 
-	// Obtener todos los jugadores activos con sus divisiones
-	const allPlayers = await db.query.players.findMany({
-		where: eq(players.active, true),
-		with: {
-			division: true
-		}
-	});
+		// Obtener todos los jugadores con sus divisiones
+		db.query.players.findMany({
+			with: {
+				division: true
+			}
+		}),
 
-	// Obtener todos los juegos para calcular ELO
-	const allGames = await db.query.games.findMany({
-		with: {
-			whitePlayer: true,
-			blackPlayer: true,
-			season: true
-		},
-		orderBy: [desc(games.playedAt)]
-	});
+		// Obtener todos los juegos para calcular estadísticas
+		db.query.games.findMany({
+			with: {
+				whitePlayer: true,
+				blackPlayer: true,
+				season: true
+			},
+			orderBy: [desc(games.playedAt)]
+		}),
+
+		// Obtener todas las temporadas
+		db.query.seasons.findMany({
+			orderBy: [desc(seasons.startDate)]
+		})
+	]);
 
 	return {
 		divisions: allDivisions,
 		players: allPlayers,
-		games: allGames
+		games: allGames,
+		seasons: allSeasons
 	};
 };

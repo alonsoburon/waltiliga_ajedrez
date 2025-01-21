@@ -1,3 +1,5 @@
+// src/lib/types.ts
+
 export interface Player {
 	id: number;
 	name: string;
@@ -14,6 +16,13 @@ export interface Season {
 	startDate: string;
 	endDate: string;
 	active: boolean;
+}
+
+export interface SeasonStats {
+	wins: number;
+	draws: number;
+	losses: number;
+	winRate: string;
 }
 
 export interface Game {
@@ -39,4 +48,44 @@ export interface Division {
 	id: number;
 	name: string;
 	rank: number;
+}
+
+// Nuevos tipos para el sistema de ELO
+
+export interface EloChange {
+	previous: number;
+	new: number;
+	change: number;
+}
+
+export interface GameWithElo extends Game {
+	whiteEloChange: EloChange;
+	blackEloChange: EloChange;
+}
+
+export interface EloHistoryEntry {
+	gameId: number;
+	date: Date;
+	elo: number;
+	change: number;
+	seasonId: number;
+}
+
+export interface PlayerElo {
+	playerId: number;
+	currentElo: number;
+	historicalElos: EloHistoryEntry[];
+}
+
+export interface EloChartData {
+	labels: string[];
+	datasets: {
+		label: string;
+		data: number[];
+		backgroundColor: string;
+		borderColor: string;
+		borderWidth: number;
+		tension: number;
+		fill: boolean;
+	}[];
 }

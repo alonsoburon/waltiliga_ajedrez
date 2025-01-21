@@ -3,6 +3,7 @@ import { db } from '$lib/server/db';
 import { seasons } from '$lib/server/db/schema';
 import type { PageServerLoad, Actions } from './$types';
 import { eq } from 'drizzle-orm';
+import { fail } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async () => {
 	const allSeasons = await db.query.seasons.findMany({
@@ -15,6 +16,9 @@ export const load: PageServerLoad = async () => {
 export const actions = {
 	create: async ({ request }) => {
 		const data = await request.formData();
+
+		// Desactivar temporada actual si existe
+		await db.update(seasons).set({ active: false }).where(eq(seasons.active, true));
 
 		const newSeason = await db
 			.insert(seasons)
@@ -30,10 +34,53 @@ export const actions = {
 		return { success: true, season: newSeason[0] };
 	},
 
+	update: async ({ request }) => {
+		try {
+			const data = await request.formData();
+			const id = data.get('id');
+			const name = data.get('name');
+			const description = data.get('description');
+			const startDate = data.get('startDate');
+			const endDate = data.get('endDate');
+
+			if (!id || !name || !description || !startDate || !endDate) {
+				return fail(400, {
+					error: 'Todos los campos son requeridos'
+				});
+			}
+
+			const updatedSeason = await db
+				.update(seasons)
+				.set({
+					name: name.toString(),
+					description: description.toString(),
+					startDate: new Date(startDate.toString()),
+					endDate: new Date(endDate.toString())
+				})
+				.where(eq(seasons.id, parseInt(id.toString())))
+				.returning();
+
+			return {
+				success: true,
+				season: updatedSeason[0]
+			};
+		} catch (error) {
+			console.error('Error updating season:', error);
+			return fail(500, {
+				error: 'Error al actualizar la temporada'
+			});
+		}
+	},
+
 	toggleActive: async ({ request }) => {
 		const data = await request.formData();
 		const id = Number(data.get('id'));
 		const active = data.get('active') === 'true';
+
+		if (active) {
+			// Si vamos a activar una temporada, desactivar la actual primero
+			await db.update(seasons).set({ active: false }).where(eq(seasons.active, true));
+		}
 
 		await db.update(seasons).set({ active }).where(eq(seasons.id, id));
 

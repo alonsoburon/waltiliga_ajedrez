@@ -16,7 +16,8 @@ export const user = pgTable('auth_user', {
 	id: text('id').primaryKey(),
 	username: text('username').notNull().unique(),
 	passwordHash: text('password_hash').notNull(),
-	isAdmin: boolean('is_admin').default(false)
+	isAdmin: boolean('is_admin').default(false),
+	playerId: integer('player_id').references(() => players.id)
 });
 
 export const session = pgTable('auth_session', {
@@ -108,7 +109,7 @@ export const weeklyPairings = pgTable('weekly_pairings', {
 // Relations
 export const userRelations = relations(user, ({ one }) => ({
 	player: one(players, {
-		fields: [user.id],
+		fields: [user.playerId],
 		references: [players.id]
 	})
 }));
@@ -148,6 +149,25 @@ export const gameRelations = relations(games, ({ one }) => ({
 	creator: one(user, {
 		fields: [games.createdBy],
 		references: [user.id]
+	})
+}));
+
+export const weeklyPairingsRelations = relations(weeklyPairings, ({ one }) => ({
+	white: one(players, {
+		fields: [weeklyPairings.whiteId],
+		references: [players.id]
+	}),
+	black: one(players, {
+		fields: [weeklyPairings.blackId],
+		references: [players.id]
+	}),
+	game: one(games, {
+		fields: [weeklyPairings.gameId],
+		references: [games.id]
+	}),
+	season: one(seasons, {
+		fields: [weeklyPairings.seasonId],
+		references: [seasons.id]
 	})
 }));
 

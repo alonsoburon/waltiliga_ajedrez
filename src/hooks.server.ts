@@ -3,15 +3,15 @@ import type { Handle } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { session, user } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
-import { redirect } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const path = event.url.pathname;
 	const sessionId = event.cookies.get('auth_session');
 
-	if (!sessionId) {
-		event.locals.auth = { user: null, session: null };
-	} else {
+	// Inicializar auth por defecto
+	event.locals.auth = { user: null, session: null };
+
+	if (sessionId) {
 		try {
 			const [result] = await db
 				.select({
@@ -31,17 +31,20 @@ export const handle: Handle = async ({ event, resolve }) => {
 					user: result.user,
 					session: result.session
 				};
-			} else {
-				event.locals.auth = { user: null, session: null };
-				if (result) {
-					await db.delete(session).where(eq(session.id, sessionId));
-				}
+			} else if (result) {
+				await db.delete(session).where(eq(session.id, sessionId));
 			}
 		} catch (error) {
 			console.error('[AUTH] Session error:', error);
-			event.locals.auth = { user: null, session: null };
 		}
 	}
+
+	// Debug
+	console.log('[AUTH] Locals:', {
+		path,
+		auth: event.locals.auth,
+		sessionId: sessionId ? 'exists' : 'none'
+	});
 
 	// Solo log de página si no es un asset
 	if (!path.includes('.')) {

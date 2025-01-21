@@ -5,23 +5,31 @@ import { desc, asc } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const allPlayers = await db.query.players.findMany({
-		with: {
-			division: true
-		}
-	});
+	console.log('🔄 Loading players data...');
 
-	const allGames = await db.query.games.findMany({
-		with: {
-			whitePlayer: true,
-			blackPlayer: true,
-			season: true
-		},
-		orderBy: [desc(games.playedAt)]
-	});
+	const [allPlayers, allGames, allDivisions] = await Promise.all([
+		db.query.players.findMany({
+			with: {
+				division: true
+			}
+		}),
+		db.query.games.findMany({
+			with: {
+				whitePlayer: true,
+				blackPlayer: true,
+				season: true
+			},
+			orderBy: [desc(games.playedAt)]
+		}),
+		db.query.divisions.findMany({
+			orderBy: [asc(divisions.rank)]
+		})
+	]);
 
-	const allDivisions = await db.query.divisions.findMany({
-		orderBy: [asc(divisions.rank)]
+	console.log('📊 Data loaded:', {
+		players: allPlayers.length,
+		games: allGames.length,
+		divisions: allDivisions.length
 	});
 
 	return {

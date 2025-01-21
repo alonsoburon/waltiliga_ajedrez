@@ -1,54 +1,107 @@
-<!-- src/routes/admin/+page.svelte -->
+<!-- routes/admin/+page.svelte -->
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { admin } from '$lib/stores/admin';
+	import PlayerStatsTable from '$lib/components/PlayerStatsTable.svelte';
+
 	export let data: PageData;
 
-	console.log('[DEBUG] Admin page data:', data);
+	// Inicializar el store con todos los datos
+	$: {
+		admin.setData(data.divisions, data.players, data.games, data.seasons);
+	}
+
+	// Estado local para filtros
+	let selectedDivision = 'all';
+	let showInactive = false;
+
+	// Stats generales del admin store
+	$: stats = admin.stats;
+	$: playersByDivision = admin.playersByDivision;
 </script>
 
-<div class="space-y-8">
-	<h1 class="h1 font-serif">Panel de Administración</h1>
+<div class="container mx-auto p-4 space-y-8">
+	<!-- Encabezado -->
+	<header class="space-y-2">
+		<h1 class="h1 font-serif">Panel de Administración</h1>
+		{#if $stats.season}
+			<p class="opacity-75">Temporada activa: {$stats.season.name}</p>
+		{/if}
+	</header>
 
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+	<!-- Stats generales -->
+	<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
 		<div class="card variant-filled-surface p-4">
-			<h3 class="h3">Jugadores Activos</h3>
-			<p class="text-3xl font-bold">{data.stats.activePlayers}</p>
+			<div class="text-center">
+				<div class="text-3xl font-bold">{$stats.totalPlayers}</div>
+				<div class="text-sm opacity-75">Jugadores totales</div>
+			</div>
 		</div>
-
 		<div class="card variant-filled-surface p-4">
-			<h3 class="h3">Partidas Totales</h3>
-			<p class="text-3xl font-bold">{data.stats.totalGames}</p>
+			<div class="text-center">
+				<div class="text-3xl font-bold">{$stats.activePlayers}</div>
+				<div class="text-sm opacity-75">Jugadores activos</div>
+			</div>
 		</div>
-
 		<div class="card variant-filled-surface p-4">
-			<h3 class="h3">Divisiones</h3>
-			<p class="text-3xl font-bold">{data.stats.totalDivisions}</p>
+			<div class="text-center">
+				<div class="text-3xl font-bold">{$stats.averageElo}</div>
+				<div class="text-sm opacity-75">ELO promedio</div>
+			</div>
+		</div>
+		<div class="card variant-filled-surface p-4">
+			<div class="text-center">
+				<div class="text-3xl font-bold">{$stats.totalGames}</div>
+				<div class="text-sm opacity-75">Partidas jugadas</div>
+			</div>
 		</div>
 	</div>
 
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-		<a
-			href="/admin/players"
-			class="card variant-ghost-surface p-4 hover:variant-filled-primary transition-all"
-		>
-			<h2 class="h2">Jugadores</h2>
-			<p class="opacity-75">Gestionar jugadores y sus estados</p>
-		</a>
+	<!-- Filtros -->
+	<div class="flex justify-end gap-4">
+		<select bind:value={selectedDivision} class="select">
+			<option value="all">Todas las divisiones</option>
+			{#each $admin.divisions as division}
+				<option value={division.id}>{division.name}</option>
+			{/each}
+		</select>
 
-		<a
-			href="/admin/games"
-			class="card variant-ghost-surface p-4 hover:variant-filled-primary transition-all"
-		>
-			<h2 class="h2">Partidas</h2>
-			<p class="opacity-75">Administrar partidas y resultados</p>
-		</a>
+		<label class="flex items-center gap-2">
+			<input type="checkbox" bind:checked={showInactive} class="checkbox" />
+			Mostrar inactivos
+		</label>
+	</div>
 
-		<a
-			href="/admin/divisions"
-			class="card variant-ghost-surface p-4 hover:variant-filled-primary transition-all"
-		>
-			<h2 class="h2">Divisiones</h2>
-			<p class="opacity-75">Configurar divisiones y rangos</p>
-		</a>
+	<!-- Rankings por división -->
+	{#if selectedDivision === 'all'}
+		{#each $admin.divisions as division}
+			{#if $playersByDivision[division.id]?.length > 0}
+				<div class="card variant-filled-surface p-4">
+					<h2 class="h2 font-serif mb-4">{division.name}</h2>
+					<PlayerStatsTable
+						players={$playersByDivision[division.id].filter((p) => showInactive || p.active)}
+						showPerformance={true}
+					/>
+				</div>
+			{/if}
+		{/each}
+	{:else}
+		<div class="card variant-filled-surface p-4">
+			<PlayerStatsTable
+				players={$playersByDivision[selectedDivision]?.filter((p) => showInactive || p.active) ??
+					[]}
+				showPerformance={true}
+			/>
+		</div>
+	{/if}
+
+	<!-- Panel de acciones administrativas -->
+	<div class="card variant-ghost p-4 space-y-4">
+		<h3 class="h3 font-serif">Acciones Administrativas</h3>
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+			<button class="btn variant-filled-primary"> Nueva Temporada </button>
+			<button class="btn variant-filled-surface"> Gestionar Divisiones </button>
+			<button class="btn variant-filled-surface"> Gestionar Jugadores </button>
+		</div>
 	</div>
 </div>

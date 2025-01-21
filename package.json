@@ -4,7 +4,7 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "dotenv -e .env.production -- vite dev",
 		"build": "cross-env NODE_ENV=production dotenv -e .env.production -- vite build",
 		"preview": "cross-env NODE_ENV=production dotenv -e .env.production -- vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -58,10 +58,13 @@
 		"@oslojs/encoding": "^1.1.0",
 		"@skeletonlabs/skeleton": "^2.10.4",
 		"@tailwindcss/typography": "^0.5.16",
+		"@types/chart.js": "^2.9.41",
+		"chart.js": "^4.4.7",
 		"drizzle-orm": "^0.38.4",
 		"lucia": "^3.2.2",
 		"nanoid": "^5.0.9",
 		"pbkdf2": "^3.1.2",
-		"postgres": "^3.4.5"
+		"postgres": "^3.4.5",
+		"svelte-chartjs": "^3.1.5"
 	}
 }
