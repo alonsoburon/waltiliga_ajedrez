@@ -142,13 +142,17 @@ export const load = (async ({ locals }) => {
 		(new Date().getTime() - new Date(activeSeason.startDate).getTime()) / (7 * 24 * 60 * 60 * 1000)
 	);
 
-	// Generar emparejamientos si es necesario
+	// Primero verificar si ya existen emparejamientos para esta semana
 	const weekPairings = await db.query.weeklyPairings.findMany({
 		where: and(eq(weeklyPairings.seasonId, activeSeason.id), eq(weeklyPairings.week, currentWeek))
 	});
 
-	if (weekPairings.length < Math.floor((activePlayers.length * 3) / 2)) {
+	// Solo generar si no hay ningún emparejamiento para esta semana
+	if (weekPairings.length === 0) {
+		console.log('No hay emparejamientos para la semana, generando...');
 		await generateWeeklyPairings(activeSeason.id, currentWeek);
+	} else {
+		console.log(`Ya existen ${weekPairings.length} emparejamientos para la semana ${currentWeek}`);
 	}
 
 	const [myPairings, otherPairings] = await Promise.all([
