@@ -11,11 +11,18 @@
 	export let players: any[];
 	export let currentSeason: any;
 	export let onClose: () => void;
+	export let pairing: any | undefined = undefined; // Nuevo prop opcional para pre-llenado
 
 	let whiteId = '';
 	let blackId = '';
 	let isSubmitting = false;
 	let formError = '';
+
+	// Pre-llenar cuando hay un pairing y cuando este cambia
+	$: if (pairing) {
+		whiteId = String(pairing.whiteId);
+		blackId = String(pairing.blackId);
+	}
 
 	$: samePlayerSelected = whiteId && blackId && whiteId === blackId;
 
@@ -25,9 +32,14 @@
 			formError = '';
 
 			try {
+				// Agregar el pairingId al resultado si existe
+				const formData = new FormData();
+				if (pairing) {
+					formData.append('pairingId', pairing.id.toString());
+				}
+
 				console.log('Form submission result:', result);
 
-				// La respuesta exitosa viene en result.data
 				if (result.type === 'success') {
 					const gameData = result.data?.data?.game;
 					console.log('Game data received:', gameData);
@@ -65,7 +77,6 @@
 		};
 	}
 
-	// Opcional: asegurarse de que el modal se cierre correctamente
 	function closeModal() {
 		whiteId = '';
 		blackId = '';
@@ -76,10 +87,16 @@
 
 <dialog bind:this={dialogElement} class="modal" on:close={closeModal}>
 	<div class="modal-content card variant-filled-surface p-4">
-		<h2 class="h2 mb-4">Nueva Partida</h2>
+		<h2 class="h2 mb-4">{pairing ? 'Registrar Partida' : 'Nueva Partida'}</h2>
 
 		<form method="POST" action="?/create" use:enhance={handleSubmit} class="space-y-4">
 			<input type="hidden" name="seasonId" value={currentSeason?.id} />
+			{#if pairing}
+				<input type="hidden" name="pairingId" value={pairing.id} />
+			{/if}
+
+			<!-- Debug para verificar valores en el template -->
+			<!-- {JSON.stringify({ whiteId, blackId, pairing }, null, 2)} -->
 
 			<label class="label">
 				<span>Jugador Blancas</span>
@@ -88,11 +105,11 @@
 					class="select variant-form-material"
 					bind:value={whiteId}
 					required
-					disabled={isSubmitting}
+					disabled={isSubmitting || !!pairing}
 				>
 					<option value="">Seleccionar jugador</option>
 					{#each players as player}
-						<option value={player.id}>{player.name}</option>
+						<option value={String(player.id)}>{player.name}</option>
 					{/each}
 				</select>
 			</label>
@@ -104,11 +121,11 @@
 					class="select variant-form-material"
 					bind:value={blackId}
 					required
-					disabled={isSubmitting}
+					disabled={isSubmitting || !!pairing}
 				>
 					<option value="">Seleccionar jugador</option>
 					{#each players as player}
-						<option value={player.id}>{player.name}</option>
+						<option value={String(player.id)}>{player.name}</option>
 					{/each}
 				</select>
 			</label>
@@ -128,7 +145,7 @@
 
 			<label class="flex items-center space-x-2">
 				<input type="checkbox" name="cond1" class="checkbox" disabled={isSubmitting} />
-				<span>Juego con reloj</span>
+				<span>🥬?</span>
 			</label>
 
 			{#if formError}

@@ -5,19 +5,16 @@
 	import { seasons } from '$lib/stores/seasons';
 
 	export let data: PageData;
+	let dialogElement: HTMLDialogElement;
+	let selectedPairing: any = null; // Agregamos esta variable
 
 	// Inicializar el store con los datos
 	$: {
-		console.log('Datos recibidos:', { season: data.season, games: data.games });
 		if (data.seasons && data.games) {
 			seasons.setData(data.seasons, data.games);
 		}
 	}
 
-	// Debugear el store
-	$: console.log('Estado del store:', $seasons);
-
-	// Usar directamente data.season mientras arreglamos el store
 	$: activeSeason = data.season;
 
 	const STATUS = {
@@ -42,17 +39,14 @@
 		}
 	}
 
-	let showModal = false;
-	let selectedPairing: any = null;
-
 	function openModal(pairing?: any) {
-		selectedPairing = pairing;
-		showModal = true;
+		selectedPairing = pairing; // Guardamos el pairing seleccionado
+		dialogElement?.showModal();
 	}
 
 	function closeModal() {
-		showModal = false;
-		selectedPairing = null;
+		selectedPairing = null; // Limpiamos el pairing al cerrar
+		dialogElement?.close();
 	}
 </script>
 
@@ -170,9 +164,9 @@
 </div>
 
 <NewGameModal
-	bind:showModal
-	pairing={selectedPairing}
+	bind:dialogElement
 	players={data.players}
 	currentSeason={activeSeason}
-	on:close={closeModal}
+	pairing={selectedPairing}
+	onClose={closeModal}
 />
