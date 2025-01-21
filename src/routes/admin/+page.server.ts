@@ -1,9 +1,11 @@
 // routes/admin/+page.server.ts
 import { db } from '$lib/server/db';
 import { players, divisions, games, seasons } from '$lib/server/db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, and } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
+import type { Player, Division } from '$lib/types';
 import { fail, redirect } from '@sveltejs/kit';
+import { getSuggestedDivisions, getDivisionThresholds } from '$lib/utils/divisions';
 
 export const load = (async ({ locals }) => {
 	// Verificar que el usuario sea administrador
@@ -110,31 +112,47 @@ export const actions = {
 		}
 	},
 
-	// Actualizar división
-	updateDivision: async ({ request }) => {
-		const formData = await request.formData();
-		const divisionId = parseInt(formData.get('id') as string);
-		const name = formData.get('name') as string;
-		const rank = parseInt(formData.get('rank') as string);
+	// Actualizar divisiones de jugadores
+	updateDivisions: async () => {
+		const [players, divisions] = await Promise.all([
+			db.query.players.findMany({
+				where: eq(players.active, true)
+			}),
+			db.query.divisions.findMany()
+		]);
 
-		if (!divisionId) {
-			return fail(400, { error: 'ID de división inválido' });
-		}
+		const suggestedDivisions = getSuggestedDivisions(players);
 
-		try {
-			const [updatedDivision] = await db
-				.update(divisions)
-				.set({
-					name,
-					rank
-				})
-				.where(eq(divisions.id, divisionId))
-				.returning();
+		// Mapear nombres de división a IDs de la base de datos
+		const divisionMap = {
+			Gold: divisions.find((d) => d.name === 'Gold')?.id,
+			Silver: divisions.find((d) => d.name === 'Silver')?.id,
+			Bronze: divisions.find((d) => d.name === 'Bronze')?.id,
+			Iron: divisions.find((d) => d.name === 'Iron')?.id
+		};
 
-			return { success: true, division: updatedDivision };
-		} catch (error) {
-			console.error('Error actualizando división:', error);
-			return fail(500, { error: 'Error actualizando división' });
-		}
+		const updates = suggestedDivisions
+			.map((suggestion) => {
+				const divisionId = divisionMap[suggestion.suggestedDivision.name];
+				if (!divisionId) return null;
+
+				return db.update(players).set({ divisionId }).where(eq(players.id, suggestion.playerId));
+			})
+			.filter(Boolean);
+
+		await Promise.all(updates);
+
+		// También devolver las estadísticas
+		const thresholds = getDivisionThresholds(players);
+
+		return {
+			success: true,
+			thresholds,
+			message: `Divisiones actualizadas basadas en percentiles:
+                Gold: Top ${DIVISION_TIERS.GOLD.percentile * 100}%
+                Silver: Top ${DIVISION_TIERS.SILVER.percentile * 100}%
+                Bronze: Top ${DIVISION_TIERS.BRONZE.percentile * 100}%
+                Iron: Resto`
+		};
 	}
 } satisfies Actions;

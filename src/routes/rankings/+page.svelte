@@ -45,7 +45,6 @@
 	);
 </script>
 
-// routes/rankings/+page.svelte
 <div class="container mx-auto p-4 space-y-8">
 	<!-- Encabezado con filtros -->
 	<div class="card variant-glass p-4">

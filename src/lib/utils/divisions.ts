@@ -1,55 +1,78 @@
-// src/lib/utils/divisions.ts
-import { db } from '$lib/server/db';
-import { players, games } from '$lib/server/db/schema';
-import { calculateHistoricalElo } from '$lib/elo';
-import { eq } from 'drizzle-orm';
+// lib/utils/divisions.ts
+import type { Player, PlayerElo } from '$lib/types';
 
-export async function updateDivisions() {
-	// 1. Obtener todos los jugadores activos y sus partidas
-	const activePlayers = await db.query.players.findMany({
-		where: eq(players.active, true)
-	});
+export const DIVISION_TIERS = {
+	GOLD: { percentile: 0.33, name: 'Gold', color: 'text-yellow-400' },
+	SILVER: { percentile: 0.66, name: 'Silver', color: 'text-gray-400' },
+	BRONZE: { percentile: 1, name: 'Bronze', color: 'text-orange-700' }
+};
 
-	const allGames = await db.query.games.findMany();
+export interface DivisionSuggestion {
+	playerId: number;
+	currentElo: number;
+	suggestedDivision: {
+		name: string;
+		color: string;
+	};
+	percentile: string;
+}
 
-	// 2. Calcular ELO actual para cada jugador
-	const playersWithElo = activePlayers.map((player) => ({
-		...player,
-		currentElo: calculateHistoricalElo(allGames, player.id, Infinity)
-	}));
+export interface DivisionThreshold {
+	division: string;
+	threshold: number;
+	percentile: string;
+}
 
-	// 3. Ordenar jugadores por ELO
-	playersWithElo.sort((a, b) => b.currentElo - a.currentElo);
+export function getSuggestedDivisions(players: Player[], elos: PlayerElo[]): DivisionSuggestion[] {
+	// Combinar players con sus ELOs actuales
+	const playersWithElo = players
+		.filter((p) => p.active)
+		.map((player) => {
+			const playerElo = elos.find((e) => e.playerId === player.id);
+			return {
+				...player,
+				currentElo: playerElo?.currentElo || player.startingElo
+			};
+		})
+		.sort((a, b) => b.currentElo - a.currentElo);
 
-	// 4. Calcular los límites de cada tercio
 	const totalPlayers = playersWithElo.length;
-	const goldCount = Math.ceil(totalPlayers / 3);
-	const silverCount = Math.ceil((totalPlayers - goldCount) / 2);
 
-	// 5. Asignar divisiones
-	const updates = playersWithElo.map((player, index) => {
-		let divisionId;
-		if (index < goldCount) {
-			divisionId = 1; // Gold
-		} else if (index < goldCount + silverCount) {
-			divisionId = 2; // Silver
-		} else {
-			divisionId = 3; // Bronze
-		}
+	return playersWithElo.map((player, index) => {
+		const percentile = index / totalPlayers;
+
+		const division =
+			Object.entries(DIVISION_TIERS).find(([, tier]) => percentile <= tier.percentile)?.[1] ||
+			DIVISION_TIERS.IRON;
+
 		return {
-			id: player.id,
-			divisionId
+			playerId: player.id,
+			currentElo: player.currentElo,
+			suggestedDivision: {
+				name: division.name,
+				color: division.color
+			},
+			percentile: (percentile * 100).toFixed(1) + '%'
 		};
 	});
+}
 
-	// 6. Actualizar en la base de datos
-	for (const update of updates) {
-		await db
-			.update(players)
-			.set({ divisionId: update.divisionId })
-			.where(eq(players.id, update.id));
-	}
+// También podemos obtener los límites de ELO para cada división
+export function getDivisionThresholds(players: Player[], elos: PlayerElo[]): DivisionThreshold[] {
+	const sortedElos = players
+		.filter((p) => p.active)
+		.map((player) => {
+			const playerElo = elos.find((e) => e.playerId === player.id);
+			return playerElo?.currentElo || player.startingElo;
+		})
+		.sort((a, b) => b - a);
 
-	console.log('Divisiones actualizadas:', updates);
-	return updates;
+	return Object.entries(DIVISION_TIERS).map(([name, tier]) => {
+		const index = Math.floor(sortedElos.length * tier.percentile);
+		return {
+			division: name,
+			threshold: sortedElos[index] || 0,
+			percentile: (tier.percentile * 100).toFixed(0) + '%'
+		};
+	});
 }
