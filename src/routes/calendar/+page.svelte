@@ -6,7 +6,7 @@
 
 	export let data: PageData;
 	let dialogElement: HTMLDialogElement;
-	let selectedPairing: any = null; // Agregamos esta variable
+	let selectedPairing: any = null;
 
 	// Inicializar el store con los datos
 	$: {
@@ -15,7 +15,8 @@
 		}
 	}
 
-	$: activeSeason = data.season;
+	// Usar season en lugar de activeSeason
+	const { myPairings, otherPairings, season } = data;
 
 	const STATUS = {
 		0: 'Pendiente',
@@ -40,12 +41,12 @@
 	}
 
 	function openModal(pairing?: any) {
-		selectedPairing = pairing; // Guardamos el pairing seleccionado
+		selectedPairing = pairing;
 		dialogElement?.showModal();
 	}
 
 	function closeModal() {
-		selectedPairing = null; // Limpiamos el pairing al cerrar
+		selectedPairing = null;
 		dialogElement?.close();
 	}
 </script>
@@ -53,11 +54,11 @@
 <div class="container mx-auto p-4 space-y-8">
 	<header class="space-y-2">
 		<h1 class="h1 font-serif">Calendario de Partidas</h1>
-		{#if activeSeason}
+		{#if season}
 			<div class="flex justify-between items-center">
 				<div>
-					<h2 class="h2">{activeSeason.name}</h2>
-					<p class="opacity-75">{activeSeason.description}</p>
+					<h2 class="h2">{season.name}</h2>
+					<p class="opacity-75">{season.description}</p>
 				</div>
 				<div class="badge variant-filled-primary">
 					Semana {data.currentWeek}
@@ -66,46 +67,48 @@
 		{/if}
 	</header>
 
-	{#if activeSeason}
+	{#if season}
 		<!-- Mis partidas -->
 		<div class="space-y-4">
 			<h3 class="h3 font-serif">Mis Partidas</h3>
-			{#if data.myPairings.length > 0}
+			{#if myPairings?.length > 0}
 				<div class="card variant-filled-surface p-4">
 					<div class="grid gap-4">
-						{#each data.myPairings as pairing}
-							<div class="card p-4 {getStatusClass(pairing.status)}">
-								<div class="flex justify-between items-center">
-									<div class="grid grid-cols-3 gap-4 flex-1">
-										<div class="text-right">
-											<span class="font-bold">{pairing.white.name}</span>
-										</div>
-										<div class="text-center">
-											<span class="font-bold">vs</span>
-											<div class="badge {getStatusClass(pairing.status)}">
-												{STATUS[pairing.status]}
+						{#each myPairings as pairing}
+							{#if pairing.white && pairing.black}
+								<div class="card p-4 {getStatusClass(pairing.status)}">
+									<div class="flex justify-between items-center">
+										<div class="grid grid-cols-3 gap-4 flex-1">
+											<div class="text-right">
+												<span class="font-bold">{pairing.white.name}</span>
+											</div>
+											<div class="text-center">
+												<span class="font-bold">vs</span>
+												<div class="badge {getStatusClass(pairing.status)}">
+													{STATUS[pairing.status]}
+												</div>
+											</div>
+											<div class="text-left">
+												<span class="font-bold">{pairing.black.name}</span>
 											</div>
 										</div>
-										<div class="text-left">
-											<span class="font-bold">{pairing.black.name}</span>
+										<div class="flex gap-2">
+											{#if pairing.game}
+												<a href="/games/{pairing.game.id}" class="btn variant-ghost-surface">
+													Ver partida
+												</a>
+											{:else}
+												<button
+													class="btn variant-filled-primary"
+													on:click={() => openModal(pairing)}
+												>
+													Registrar partida
+												</button>
+											{/if}
 										</div>
 									</div>
-									<div class="flex gap-2">
-										{#if pairing.game}
-											<a href="/games/{pairing.game.id}" class="btn variant-ghost-surface">
-												Ver partida
-											</a>
-										{:else}
-											<button
-												class="btn variant-filled-primary"
-												on:click={() => openModal(pairing)}
-											>
-												Registrar partida
-											</button>
-										{/if}
-									</div>
 								</div>
-							</div>
+							{/if}
 						{/each}
 					</div>
 				</div>
@@ -119,33 +122,35 @@
 		<!-- Otras partidas -->
 		<div class="space-y-4">
 			<h3 class="h3 font-serif">Otras Partidas</h3>
-			{#if data.otherPairings.length > 0}
+			{#if otherPairings?.length > 0}
 				<div class="card variant-filled-surface p-4">
 					<div class="grid gap-4">
-						{#each data.otherPairings as pairing}
-							<div class="card p-4 {getStatusClass(pairing.status)}">
-								<div class="flex justify-between items-center">
-									<div class="grid grid-cols-3 gap-4 flex-1">
-										<div class="text-right">
-											<span class="font-bold">{pairing.white.name}</span>
-										</div>
-										<div class="text-center">
-											<span class="font-bold">vs</span>
-											<div class="badge {getStatusClass(pairing.status)}">
-												{STATUS[pairing.status]}
+						{#each otherPairings as pairing}
+							{#if pairing.white && pairing.black}
+								<div class="card p-4 {getStatusClass(pairing.status)}">
+									<div class="flex justify-between items-center">
+										<div class="grid grid-cols-3 gap-4 flex-1">
+											<div class="text-right">
+												<span class="font-bold">{pairing.white.name}</span>
+											</div>
+											<div class="text-center">
+												<span class="font-bold">vs</span>
+												<div class="badge {getStatusClass(pairing.status)}">
+													{STATUS[pairing.status]}
+												</div>
+											</div>
+											<div class="text-left">
+												<span class="font-bold">{pairing.black.name}</span>
 											</div>
 										</div>
-										<div class="text-left">
-											<span class="font-bold">{pairing.black.name}</span>
-										</div>
+										{#if pairing.game}
+											<a href="/games/{pairing.game.id}" class="btn variant-ghost-surface">
+												Ver partida
+											</a>
+										{/if}
 									</div>
-									{#if pairing.game}
-										<a href="/games/{pairing.game.id}" class="btn variant-ghost-surface">
-											Ver partida
-										</a>
-									{/if}
 								</div>
-							</div>
+							{/if}
 						{/each}
 					</div>
 				</div>
@@ -166,7 +171,7 @@
 <NewGameModal
 	bind:dialogElement
 	players={data.players}
-	currentSeason={activeSeason}
+	currentSeason={season}
 	pairing={selectedPairing}
 	onClose={closeModal}
 />

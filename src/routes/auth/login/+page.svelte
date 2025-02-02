@@ -38,5 +38,9 @@
 
 			<button type="submit" class="btn variant-filled w-full"> Ingresar </button>
 		</form>
+
+		<p class="text-center mt-4">
+			¿No tienes una cuenta? <a href="/auth/register" class="link">Regístrate aquí</a>
+		</p>
 	</div>
 </div>

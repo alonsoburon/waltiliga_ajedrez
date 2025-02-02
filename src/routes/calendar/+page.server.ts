@@ -96,8 +96,8 @@ export const load = (async ({ locals }) => {
 		db.query.games.findMany()
 	]);
 
+	const now = new Date();
 	const activeSeason = allSeasons.find((season) => {
-		const now = new Date();
 		const startDate = new Date(season.startDate);
 		const endDate = new Date(season.endDate);
 		return season.active && now >= startDate && now <= endDate;
@@ -142,45 +142,28 @@ export const load = (async ({ locals }) => {
 		(new Date().getTime() - new Date(activeSeason.startDate).getTime()) / (7 * 24 * 60 * 60 * 1000)
 	);
 
-	// Primero verificar si ya existen emparejamientos para esta semana
+	// Obtener emparejamientos con información de jugadores
 	const weekPairings = await db.query.weeklyPairings.findMany({
-		where: and(eq(weeklyPairings.seasonId, activeSeason.id), eq(weeklyPairings.week, currentWeek))
+		where: and(
+			eq(weeklyPairings.seasonId, activeSeason.id),
+			eq(weeklyPairings.week, currentWeek)
+		),
+		with: {
+			white: true,
+			black: true,
+			game: true
+		}
 	});
 
-	// Solo generar si no hay ningún emparejamiento para esta semana
-	if (weekPairings.length === 0) {
-		console.log('No hay emparejamientos para la semana, generando...');
-		await generateWeeklyPairings(activeSeason.id, currentWeek);
-	} else {
-		console.log(`Ya existen ${weekPairings.length} emparejamientos para la semana ${currentWeek}`);
-	}
+	// Filtrar emparejamientos únicos para el jugador actual
+	const myPairings = weekPairings.filter(
+		(pairing) => pairing.whiteId === playerId || pairing.blackId === playerId
+	);
 
-	const [myPairings, otherPairings] = await Promise.all([
-		db.query.weeklyPairings.findMany({
-			where: and(
-				eq(weeklyPairings.seasonId, activeSeason.id),
-				or(eq(weeklyPairings.whiteId, playerId), eq(weeklyPairings.blackId, playerId))
-			),
-			with: {
-				white: true,
-				black: true,
-				game: true
-			},
-			orderBy: [asc(weeklyPairings.week)]
-		}),
-		db.query.weeklyPairings.findMany({
-			where: and(
-				eq(weeklyPairings.seasonId, activeSeason.id),
-				eq(weeklyPairings.week, currentWeek),
-				not(or(eq(weeklyPairings.whiteId, playerId), eq(weeklyPairings.blackId, playerId)))
-			),
-			with: {
-				white: true,
-				black: true,
-				game: true
-			}
-		})
-	]);
+	// Filtrar emparejamientos únicos para otros jugadores
+	const otherPairings = weekPairings.filter(
+		(pairing) => pairing.whiteId !== playerId && pairing.blackId !== playerId
+	);
 
 	return {
 		myPairings,
@@ -189,10 +172,7 @@ export const load = (async ({ locals }) => {
 		season: activeSeason,
 		seasons: allSeasons,
 		games: allGames,
-		user: {
-			...locals.auth.user,
-			playerId
-		},
+		user: locals.auth.user,
 		players: activePlayers
 	};
 }) satisfies PageServerLoad;

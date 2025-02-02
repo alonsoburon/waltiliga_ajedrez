@@ -7,9 +7,9 @@ import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	console.log('POST recibido en /calendar'); // Debug
-	console.log('Usuario:', locals.user); // Debug
+	console.log('Usuario:', locals.auth?.user); // Debug
 
-	if (!locals.user?.isAdmin) {
+	if (!locals.auth?.user?.isAdmin) {
 		console.log('Usuario no autorizado'); // Debug
 		return new Response('No autorizado', { status: 401 });
 	}
