@@ -1,8 +1,8 @@
-<!-- routes/calendar/+page.svelte -->
 <script lang="ts">
 	import type { PageData } from './$types';
 	import NewGameModal from '$lib/components/NewGameModal.svelte';
 	import { seasons } from '$lib/stores/seasons';
+	import { Toast } from '@skeletonlabs/skeleton';
 
 	export let data: PageData;
 	let dialogElement: HTMLDialogElement;
@@ -50,6 +50,14 @@
 		dialogElement?.close();
 	}
 </script>
+
+{#if data.newPairingsGenerated}
+	<Toast position="t" duration={4000}>
+		<div class="alert variant-filled-success">
+			<span>Se han generado nuevos emparejamientos para la semana {data.currentWeek}.</span>
+		</div>
+	</Toast>
+{/if}
 
 <div class="container mx-auto p-4 space-y-8">
 	<header class="space-y-2">

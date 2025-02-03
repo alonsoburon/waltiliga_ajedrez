@@ -1,4 +1,3 @@
-// routes/calendar/+page.server.ts
 import { db } from '$lib/server/db';
 import { user, players, weeklyPairings, seasons, games } from '$lib/server/db/schema';
 import { eq, and, or, not, desc, asc } from 'drizzle-orm';
@@ -83,6 +82,8 @@ async function generateWeeklyPairings(seasonId: number, week: number) {
 	if (newPairings.length > 0) {
 		await db.insert(weeklyPairings).values(newPairings);
 	}
+
+	return newPairings;
 }
 
 export const load = (async ({ locals }) => {
@@ -112,8 +113,30 @@ export const load = (async ({ locals }) => {
 			seasons: allSeasons,
 			games: allGames,
 			user: locals.auth.user,
-			players: []
+			players: [],
+			newPairingsGenerated: false
 		};
+	}
+
+	const currentWeek = Math.ceil(
+		(new Date().getTime() - new Date(activeSeason.startDate).getTime()) / (7 * 24 * 60 * 60 * 1000)
+	);
+
+	// Verificar si ya existen emparejamientos para esta semana
+	const existingPairings = await db.query.weeklyPairings.findMany({
+		where: and(eq(weeklyPairings.seasonId, activeSeason.id), eq(weeklyPairings.week, currentWeek))
+	});
+
+	let newPairingsGenerated = false;
+
+	// Si no hay emparejamientos para esta semana y el usuario es admin, generarlos
+	if (existingPairings.length === 0 && locals.auth.user.isAdmin) {
+		try {
+			await generateWeeklyPairings(activeSeason.id, currentWeek);
+			newPairingsGenerated = true;
+		} catch (error) {
+			console.error('Error generando emparejamientos:', error);
+		}
 	}
 
 	const [activePlayers, userWithPlayer] = await Promise.all([
@@ -127,27 +150,22 @@ export const load = (async ({ locals }) => {
 		return {
 			myPairings: [],
 			otherPairings: [],
-			currentWeek: 0,
+			currentWeek,
 			season: activeSeason,
 			seasons: allSeasons,
 			games: allGames,
 			user: locals.auth.user,
 			players: activePlayers,
-			error: 'Usuario no tiene jugador asociado'
+			error: 'Usuario no tiene jugador asociado',
+			newPairingsGenerated
 		};
 	}
 
 	const playerId = userWithPlayer[0].playerId;
-	const currentWeek = Math.ceil(
-		(new Date().getTime() - new Date(activeSeason.startDate).getTime()) / (7 * 24 * 60 * 60 * 1000)
-	);
 
-	// Obtener emparejamientos con información de jugadores
+	// Obtener emparejamientos actualizados con información de jugadores
 	const weekPairings = await db.query.weeklyPairings.findMany({
-		where: and(
-			eq(weeklyPairings.seasonId, activeSeason.id),
-			eq(weeklyPairings.week, currentWeek)
-		),
+		where: and(eq(weeklyPairings.seasonId, activeSeason.id), eq(weeklyPairings.week, currentWeek)),
 		with: {
 			white: true,
 			black: true,
@@ -155,12 +173,12 @@ export const load = (async ({ locals }) => {
 		}
 	});
 
-	// Filtrar emparejamientos únicos para el jugador actual
+	// Filtrar emparejamientos para el jugador actual
 	const myPairings = weekPairings.filter(
 		(pairing) => pairing.whiteId === playerId || pairing.blackId === playerId
 	);
 
-	// Filtrar emparejamientos únicos para otros jugadores
+	// Filtrar emparejamientos para otros jugadores
 	const otherPairings = weekPairings.filter(
 		(pairing) => pairing.whiteId !== playerId && pairing.blackId !== playerId
 	);
@@ -173,6 +191,7 @@ export const load = (async ({ locals }) => {
 		seasons: allSeasons,
 		games: allGames,
 		user: locals.auth.user,
-		players: activePlayers
+		players: activePlayers,
+		newPairingsGenerated
 	};
 }) satisfies PageServerLoad;
