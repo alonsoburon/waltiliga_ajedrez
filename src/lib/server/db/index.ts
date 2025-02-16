@@ -9,7 +9,7 @@ if (!connectionString) {
 }
 
 const queryConfig = {
-	prepare: false,
+	prepare: true,
 	ssl:
 		process.env.NODE_ENV === 'production'
 			? {

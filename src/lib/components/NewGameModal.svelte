@@ -1,24 +1,25 @@
 <!-- NewGameModal.svelte -->
+<!-- NewGameModal.svelte -->
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { enhance, type SubmitFunction } from '$app/forms';
 	import { gamesStore } from '$lib/stores/games';
 	import { getToastStore } from '@skeletonlabs/skeleton';
 	import { fade } from 'svelte/transition';
+	import type { Player, Season, Pairing, Game } from '$lib/types'; // Asegúrate de tener estos tipos definidos
 
 	const toast = getToastStore();
 
 	export let dialogElement: HTMLDialogElement;
-	export let players: any[];
-	export let currentSeason: any;
+	export let players: Player[];
+	export let currentSeason: Season;
 	export let onClose: () => void;
-	export let pairing: any | undefined = undefined; // Nuevo prop opcional para pre-llenado
+	export let pairing: Pairing | undefined = undefined;
 
 	let whiteId = '';
 	let blackId = '';
 	let isSubmitting = false;
 	let formError = '';
 
-	// Pre-llenar cuando hay un pairing y cuando este cambia
 	$: if (pairing) {
 		whiteId = String(pairing.whiteId);
 		blackId = String(pairing.blackId);
@@ -26,22 +27,42 @@
 
 	$: samePlayerSelected = whiteId && blackId && whiteId === blackId;
 
-	function handleSubmit() {
-		return async ({ result, update }) => {
+	function closeModal(): void {
+		whiteId = '';
+		blackId = '';
+		dialogElement?.close();
+		onClose();
+	}
+
+	async function updatePairingStatus(pairingId: number): Promise<void> {
+		try {
+			const response = await fetch(`/api/pairings/${pairingId}`, {
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ status: 2 }) // 2 = Completada
+			});
+
+			if (!response.ok) {
+				throw new Error('Error actualizando estado del pairing');
+			}
+		} catch (error) {
+			console.error('Error en la actualización del pairing:', error);
+			throw error;
+		}
+	}
+
+	const handleSubmit: SubmitFunction = () => {
+		return async ({ result }) => {
 			isSubmitting = true;
 			formError = '';
 
 			try {
-				// Agregar el pairingId al resultado si existe
-				const formData = new FormData();
-				if (pairing) {
-					formData.append('pairingId', pairing.id.toString());
-				}
-
 				console.log('Form submission result:', result);
 
 				if (result.type === 'success') {
-					const gameData = result.data?.data?.game;
+					const gameData = result.data?.game;
 					console.log('Game data received:', gameData);
 
 					if (gameData) {
@@ -52,10 +73,11 @@
 							background: 'variant-filled-success'
 						});
 
-						// Limpiar y cerrar
 						whiteId = '';
 						blackId = '';
 						dialogElement?.close();
+						onClose();
+						window.location.reload();
 					}
 				} else {
 					formError = result.error || 'Error al guardar la partida';
@@ -75,24 +97,21 @@
 				isSubmitting = false;
 			}
 		};
-	}
-
-	function closeModal() {
-		whiteId = '';
-		blackId = '';
-		dialogElement?.close();
-		onClose();
-	}
+	};
 </script>
 
 <dialog bind:this={dialogElement} class="modal" on:close={closeModal}>
 	<div class="modal-content card variant-filled-surface p-4">
 		<h2 class="h2 mb-4">{pairing ? 'Registrar Partida' : 'Nueva Partida'}</h2>
 
+		<!-- NewGameModal.svelte -->
 		<form method="POST" action="?/create" use:enhance={handleSubmit} class="space-y-4">
 			<input type="hidden" name="seasonId" value={currentSeason?.id} />
 			{#if pairing}
 				<input type="hidden" name="pairingId" value={pairing.id} />
+				<!-- Agregar estos campos ocultos -->
+				<input type="hidden" name="whiteId" value={pairing.whiteId} />
+				<input type="hidden" name="blackId" value={pairing.blackId} />
 			{/if}
 
 			<!-- Debug para verificar valores en el template -->

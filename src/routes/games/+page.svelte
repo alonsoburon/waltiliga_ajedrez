@@ -3,14 +3,35 @@
 	import NewGameModal from '$lib/components/NewGameModal.svelte';
 	import { gamesStore } from '$lib/stores/games';
 	import { fade } from 'svelte/transition';
+	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 
 	export let data: PageData;
 	let dialogElement: HTMLDialogElement;
+	let selectedPairing: any = null; // Agregada esta línea
 
 	$: gamesStore.setData(data.games, data.players);
 
 	const openModal = () => dialogElement?.showModal();
-	const closeModal = () => dialogElement?.close();
+	const closeModal = () => {
+		selectedPairing = null; // Opcional: limpiar el pairing al cerrar
+		dialogElement?.close();
+	};
+
+	onMount(() => {
+		if (browser) {
+			const params = new URLSearchParams(window.location.search);
+			if (params.get('modal') === 'new') {
+				const pairing = {
+					whiteId: parseInt(params.get('whiteId')),
+					blackId: parseInt(params.get('blackId')),
+					id: parseInt(params.get('pairingId'))
+				};
+				selectedPairing = pairing;
+				openModal();
+			}
+		}
+	});
 </script>
 
 <div class="container mx-auto p-4">

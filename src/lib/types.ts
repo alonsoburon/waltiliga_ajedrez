@@ -89,3 +89,18 @@ export interface EloChartData {
 		fill: boolean;
 	}[];
 }
+
+export interface WeeklyPairing {
+	id: number;
+	whiteId: number;
+	blackId: number;
+	seasonId: number;
+	week: number;
+	status: number; // 0: pendiente, 1: programada, 2: completada, 3: cancelada
+}
+
+export interface PairingWithDetails extends WeeklyPairing {
+	white: Player;
+	black: Player;
+	game?: Game;
+}

@@ -61,6 +61,32 @@ function createWeeklyPairingsStore() {
 			pairingsStore.update((pairings) =>
 				pairings.map((p) => (p.id === pairingId ? { ...p, game, status: 2 } : p))
 			);
+		},
+
+		generateWeeklyPairings: async (seasonId: number, week: number) => {
+			try {
+				const response = await fetch('/calendar', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ seasonId, week })
+				});
+
+				if (!response.ok) {
+					throw new Error('Error generando emparejamientos');
+				}
+
+				const { pairings } = await response.json();
+				pairingsStore.update((currentPairings) =>
+					currentPairings.filter((p) => p.seasonId !== seasonId || p.week !== week).concat(pairings)
+				);
+
+				return pairings;
+			} catch (error) {
+				console.error('Error en generateWeeklyPairings:', error);
+				throw error;
+			}
 		}
 	};
 }

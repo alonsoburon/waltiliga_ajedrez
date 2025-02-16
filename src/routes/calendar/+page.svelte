@@ -3,6 +3,7 @@
 	import type { PageData } from './$types';
 	import NewGameModal from '$lib/components/NewGameModal.svelte';
 	import { seasons } from '$lib/stores/seasons';
+	import { gamesStore } from '$lib/stores/games';
 
 	export let data: PageData;
 	let dialogElement: HTMLDialogElement;
@@ -12,11 +13,12 @@
 	$: {
 		if (data.seasons && data.games) {
 			seasons.setData(data.seasons, data.games);
+			gamesStore.setData(data.games, data.players);
 		}
 	}
 
 	// Usar season en lugar de activeSeason
-	const { myPairings, otherPairings, season } = data;
+	const { myPairings, otherPairings, season, isGenerating } = data;
 
 	const STATUS = {
 		0: 'Pendiente',
@@ -67,6 +69,21 @@
 		{/if}
 	</header>
 
+	{#if isGenerating}
+		<div class="card variant-ghost-warning p-4 text-center space-y-4">
+			<div class="flex justify-center">
+				<div class="spinner-border" role="status">
+					<span class="sr-only">Generando emparejamientos...</span>
+				</div>
+			</div>
+			<p class="font-bold">Generando emparejamientos para la semana {data.currentWeek}</p>
+			<p class="text-sm opacity-75">
+				Este proceso puede tardar unos momentos mientras se calculan los mejores emparejamientos
+				basados en el historial de partidas y balance de colores.
+			</p>
+		</div>
+	{/if}
+
 	{#if season}
 		<!-- Mis partidas -->
 		<div class="space-y-4">
@@ -94,9 +111,13 @@
 										</div>
 										<div class="flex gap-2">
 											{#if pairing.game}
-												<a href="/games/{pairing.game.id}" class="btn variant-ghost-surface">
-													Ver partida
-												</a>
+												<span
+													class="badge {gamesStore.getResultClass(
+														gamesStore.getGameResult(pairing.game)
+													)}"
+												>
+													{gamesStore.getGameResult(pairing.game)}
+												</span>
 											{:else}
 												<button
 													class="btn variant-filled-primary"
@@ -143,11 +164,24 @@
 												<span class="font-bold">{pairing.black.name}</span>
 											</div>
 										</div>
-										{#if pairing.game}
-											<a href="/games/{pairing.game.id}" class="btn variant-ghost-surface">
-												Ver partida
-											</a>
-										{/if}
+										<div class="flex gap-2">
+											{#if pairing.game}
+												<span
+													class="badge {gamesStore.getResultClass(
+														gamesStore.getGameResult(pairing.game)
+													)}"
+												>
+													{gamesStore.getGameResult(pairing.game)}
+												</span>
+											{:else}
+												<button
+													class="btn variant-filled-primary"
+													on:click={() => openModal(pairing)}
+												>
+													Registrar partida
+												</button>
+											{/if}
+										</div>
 									</div>
 								</div>
 							{/if}
@@ -175,3 +209,40 @@
 	pairing={selectedPairing}
 	onClose={closeModal}
 />
+
+<style lang="postcss">
+	.spinner-border {
+		@apply inline-block w-8 h-8;
+		border: 0.25em solid currentColor;
+		border-right-color: transparent;
+		border-radius: 50%;
+		animation: spinner-border 0.75s linear infinite;
+	}
+
+	@keyframes spinner-border {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	.sr-only {
+		@apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+		clip: rect(0, 0, 0, 0);
+	}
+
+	.badge {
+		@apply px-2 py-1 rounded;
+	}
+
+	.badge-white {
+		@apply bg-white text-black border border-black;
+	}
+
+	.badge-black {
+		@apply bg-black text-white;
+	}
+
+	.badge-draw {
+		@apply bg-[#ffd700] text-black;
+	}
+</style>
